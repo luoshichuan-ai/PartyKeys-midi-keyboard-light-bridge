@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node generate-icons.js)",
+      "Bash(cmd.exe /c \"where node 2>&1\")",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Read(//c/Users/**)",
+      "Bash(find /c -name \"node.exe\" -maxdepth 8)",
+      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(cmd /c \"dir /b /s \\\\\"D:\\\\pks_midi_light\\\\\"\")",
+      "Bash(powershell -Command \"Get-ChildItem 'D:\\\\pks_midi_light\\\\app' | Select-Object -ExpandProperty Name\")",
+      "Bash(powershell -Command \"Get-ChildItem 'D:\\\\pks_midi_light\\\\app\\\\midi' | Select-Object -ExpandProperty Name; Write-Host '---ext---'; Get-ChildItem 'D:\\\\pks_midi_light\\\\extension' | Select-Object -ExpandProperty Name\")"
+    ]
+  }
+}

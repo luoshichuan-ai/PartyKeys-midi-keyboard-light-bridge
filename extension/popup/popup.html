@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PartyKeys MIDI Light</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="#F36500" />
+          <rect x="4" y="10" width="4" height="12" rx="1" fill="white" />
+          <rect x="10" y="7" width="4" height="15" rx="1" fill="white" />
+          <rect x="16" y="10" width="4" height="12" rx="1" fill="white" />
+          <rect x="22" y="13" width="2" height="9" rx="1" fill="white" opacity="0.6" />
+          <rect x="7.5" y="10" width="2.5" height="8" rx="1" fill="#F36500" />
+          <rect x="13.5" y="7" width="2.5" height="8" rx="1" fill="#F36500" />
+          <rect x="19.5" y="10" width="2.5" height="8" rx="1" fill="#F36500" />
+        </svg>
+      </div>
+      <div class="title-block">
+        <div class="title">PartyKeys MIDI Light</div>
+        <div class="subtitle">MIDI Monitor</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="row">
+        <span class="label">Monitor MIDI</span>
+        <label class="toggle">
+          <input type="checkbox" id="toggleEnabled" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="status-row">
+        <div class="dot" id="dotNative"></div>
+        <span class="status-text" id="statusNative">Desktop app not connected</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="footer">
+      <span>Open desktop app to connect PartyKeys</span>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

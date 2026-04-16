@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MIDI Hook Test</title>
+  <style>
+    body { font-family: monospace; padding: 24px; background: #1a1a1a; color: #eee; }
+    button { padding: 10px 24px; font-size: 15px; background: #F36500; color: white;
+             border: none; border-radius: 6px; cursor: pointer; margin: 6px 4px; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #log { margin-top: 16px; font-size: 13px; line-height: 1.8; }
+    .ok  { color: #7fc97f; }
+    .err { color: #f97b7b; }
+    .note { color: #ffd080; }
+  </style>
+</head>
+<body>
+  <h2>PartyKeys — MIDI Hook Test</h2>
+  <p>This page sends MIDI notes via Web MIDI API so you can verify the Chrome extension intercepts them.</p>
+
+  <button id="btnInit">1. Request MIDI Access</button>
+  <button id="btnPlay" disabled>2. Play C Major Scale</button>
+  <button id="btnStop" disabled>Stop</button>
+
+  <div id="log"></div>
+
+<script>
+  let midiAccess = null;
+  let playing = false;
+
+  function log(msg, cls = '') {
+    const d = document.getElementById('log');
+    const p = document.createElement('p');
+    if (cls) p.className = cls;
+    p.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    d.prepend(p);
+  }
+
+  document.getElementById('btnInit').onclick = async () => {
+    try {
+      midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+      log('MIDI access granted ✓', 'ok');
+      log('Output ports found: ' + midiAccess.outputs.size, 'ok');
+      midiAccess.outputs.forEach(out => log('  → ' + out.name, 'ok'));
+      document.getElementById('btnPlay').disabled = false;
+    } catch (e) {
+      log('Error: ' + e.message, 'err');
+    }
+  };
+
+  document.getElementById('btnPlay').onclick = () => playScale();
+  document.getElementById('btnStop').onclick = () => { playing = false; };
+
+  async function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  async function playScale() {
+    if (!midiAccess) return;
+    const outputs = [...midiAccess.outputs.values()];
+    if (outputs.length === 0) {
+      log('No MIDI output ports — connect a MIDI device or virtual port first.', 'err');
+      return;
+    }
+
+    playing = true;
+    document.getElementById('btnStop').disabled = false;
+
+    // Play on ALL available output ports so the extension can capture
+    const notes = [60, 62, 64, 65, 67, 69, 71, 72]; // C major scale
+
+    for (const out of outputs) {
+      log('Playing on: ' + out.name);
+    }
+
+    while (playing) {
+      for (const note of notes) {
+        if (!playing) break;
+        for (const out of outputs) {
+          out.send([0x90, note, 100]); // Note On, ch 1
+        }
+        log('Note On  → ' + note + ' (' + noteName(note) + ')', 'note');
+        await sleep(400);
+        for (const out of outputs) {
+          out.send([0x80, note, 0]);   // Note Off
+        }
+        log('Note Off → ' + note, 'note');
+        await sleep(100);
+      }
+      await sleep(500);
+    }
+    log('Stopped.', 'ok');
+  }
+
+  function noteName(n) {
+    return ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'][n % 12] + Math.floor(n / 12 - 1);
+  }
+</script>
+</body>
+</html>

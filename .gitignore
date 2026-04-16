@@ -1,0 +1,18 @@
+# 依赖包（npm install 可以还原）
+node_modules/
+
+# electron-builder 打包输出
+dist/
+out/
+
+# 由 install-host.js 自动生成、含有本机绝对路径
+app/host.bat
+app/host.sh
+app/com.partykeys.midilight.json
+
+# npm 日志
+npm-debug.log*
+
+# 系统文件
+.DS_Store
+Thumbs.db
