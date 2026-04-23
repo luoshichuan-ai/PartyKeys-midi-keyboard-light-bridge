@@ -1,8 +1,8 @@
 const toggleEl = document.getElementById('toggleEnabled');
-const dotEl = document.getElementById('dotNative');
+const dotEl    = document.getElementById('dotNative');
 const statusEl = document.getElementById('statusNative');
 
-// ─── Load current status ──────────────────────────────────────────────────────
+// ─── Load current status on open ─────────────────────────────────────────────
 chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
   if (chrome.runtime.lastError) return;
   applyStatus(res);
@@ -21,9 +21,7 @@ toggleEl.addEventListener('change', () => {
 
 // ─── Live status updates from background ─────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'STATUS_UPDATE') {
-    applyStatus(msg);
-  }
+  if (msg.type === 'STATUS_UPDATE') applyStatus(msg);
 });
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -32,13 +30,13 @@ function applyStatus(status) {
   toggleEl.checked = status.enabled;
 
   dotEl.className = 'dot';
-  if (status.nativeConnected) {
+  if (status.keyboardConnected) {
     dotEl.classList.add('connected');
-    statusEl.textContent = 'Desktop app connected';
+    statusEl.textContent = 'PartyKeys connected';
   } else if (status.enabled) {
     dotEl.classList.add('connecting');
-    statusEl.textContent = 'Connecting to desktop app…';
+    statusEl.textContent = 'Searching for PartyKeys…';
   } else {
-    statusEl.textContent = 'Desktop app not connected';
+    statusEl.textContent = 'Monitoring disabled';
   }
 }

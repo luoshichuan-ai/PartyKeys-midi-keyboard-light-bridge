@@ -1,101 +1,53 @@
 /**
- * background.js — Manifest V3 service worker
+ * background.js — Manifest V3 service worker (simplified)
  *
  * Responsibilities:
- *  1. Maintain enabled/disabled state (persisted in chrome.storage.local)
- *  2. When enabled, open a Native Messaging connection to the desktop app
- *  3. Forward MIDI messages from content scripts to the desktop app
- *  4. Broadcast status changes back to popup
+ *  1. Persist enabled/disabled state in chrome.storage.local
+ *  2. Track keyboard connection status reported by content scripts
+ *  3. Respond to popup requests (GET_STATUS, SET_ENABLED)
+ *  4. Broadcast status changes to popup
+ *
+ * No longer handles Native Messaging — the content script now
+ * communicates directly with PartyKeys via Web MIDI API.
  */
 
-const HOST_NAME = 'com.partykeys.midilight';
-
-let nativePort = null;
 let isEnabled = false;
+let keyboardConnected = false;
 
-// ─── Restore persisted state on startup ──────────────────────────────────────
+// ─── Restore state on service worker startup ──────────────────────────────────
 chrome.storage.local.get('enabled', (result) => {
   isEnabled = result.enabled === true;
-  if (isEnabled) connectNative();
 });
 
-// ─── Messages from content scripts & popup ───────────────────────────────────
+// ─── Message handler ──────────────────────────────────────────────────────────
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.type) {
-    case 'MIDI_MESSAGE':
-      if (isEnabled && nativePort) {
-        try {
-          nativePort.postMessage(msg);
-        } catch (_) {
-          nativePort = null;
-        }
-      }
-      break;
-
-    case 'SET_ENABLED':
-      setEnabled(msg.enabled);
-      sendResponse({ ok: true, enabled: isEnabled });
-      break;
 
     case 'GET_STATUS':
-      sendResponse({
-        enabled: isEnabled,
-        nativeConnected: nativePort !== null,
-      });
-      break;
+      sendResponse({ enabled: isEnabled, keyboardConnected });
+      return false;
+
+    case 'SET_ENABLED':
+      isEnabled = msg.enabled;
+      chrome.storage.local.set({ enabled: isEnabled });
+      broadcastStatus();
+      sendResponse({ ok: true, enabled: isEnabled, keyboardConnected });
+      return false;
+
+    case 'PKS_KEYBOARD_STATUS':
+      // Sent by content-script whenever PartyKeys connects or disconnects
+      keyboardConnected = msg.connected;
+      broadcastStatus();
+      return false;
   }
-  // Return true only when sendResponse will be called asynchronously
   return false;
 });
 
-// ─── Enable / disable ────────────────────────────────────────────────────────
-function setEnabled(value) {
-  isEnabled = value;
-  chrome.storage.local.set({ enabled: value });
-
-  if (isEnabled && !nativePort) {
-    connectNative();
-  } else if (!isEnabled && nativePort) {
-    nativePort.disconnect();
-    nativePort = null;
-  }
-
-  broadcastStatus();
-}
-
-// ─── Native Messaging ─────────────────────────────────────────────────────────
-function connectNative() {
-  try {
-    nativePort = chrome.runtime.connectNative(HOST_NAME);
-
-    nativePort.onMessage.addListener((msg) => {
-      // Messages from desktop app (e.g. status updates) — broadcast to popup
-      broadcastStatus();
-    });
-
-    nativePort.onDisconnect.addListener(() => {
-      const err = chrome.runtime.lastError;
-      console.warn('[PKS] Native host disconnected:', err?.message);
-      nativePort = null;
-      broadcastStatus();
-
-      // Auto-reconnect while enabled
-      if (isEnabled) {
-        setTimeout(connectNative, 3000);
-      }
-    });
-
-    broadcastStatus();
-  } catch (e) {
-    console.error('[PKS] connectNative failed:', e);
-    nativePort = null;
-  }
-}
-
-// ─── Broadcast current status to all extension views ─────────────────────────
+// ─── Broadcast to popup (if open) ────────────────────────────────────────────
 function broadcastStatus() {
-  const status = { enabled: isEnabled, nativeConnected: nativePort !== null };
-  chrome.runtime
-    .sendMessage({ type: 'STATUS_UPDATE', ...status })
-    .catch(() => {}); // popup may not be open
+  chrome.runtime.sendMessage({
+    type: 'STATUS_UPDATE',
+    enabled: isEnabled,
+    keyboardConnected,
+  }).catch(() => {}); // popup may not be open — ignore error
 }

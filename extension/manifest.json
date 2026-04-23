@@ -1,10 +1,9 @@
 {
   "manifest_version": 3,
   "name": "PartyKeys MIDI Light",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Monitor MIDI signals from web pages and light up your PartyKeys keyboard in real time.",
   "permissions": [
-    "nativeMessaging",
     "storage"
   ],
   "host_permissions": [
@@ -15,13 +14,19 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "*://*.midiano.com/*",
+        "*://*.flowkey.com/*"
+      ],
       "js": ["injected.js"],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "*://*.midiano.com/*",
+        "*://*.flowkey.com/*"
+      ],
       "js": ["content-script.js"],
       "run_at": "document_start"
     }
