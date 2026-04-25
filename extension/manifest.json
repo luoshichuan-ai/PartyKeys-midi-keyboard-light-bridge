@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PartyKeys MIDI Light",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Monitor MIDI signals from web pages and light up your PartyKeys keyboard in real time.",
   "permissions": [
     "storage"
