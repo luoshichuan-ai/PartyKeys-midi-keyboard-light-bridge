@@ -114,9 +114,14 @@ function handleMidiMessage(data) {
   } else {
     activeNotes.delete(note);
 
+    // Always send a single-note-off SysEx immediately.
+    // The batch command only updates notes explicitly listed in it —
+    // notes absent from the list are NOT auto-cleared by this hardware.
+    // Sending an explicit off here ensures the key goes dark right away.
+    sendSysEx(buildNoteOffCommand(note));
+
     if (activeNotes.size > 0) {
-      // Still have active notes — schedule a short update so the keyboard
-      // reflects the removal (it auto-turns-off keys absent from the list)
+      // Other notes still active — schedule a batch update to confirm state.
       if (!noteOffTimer) {
         noteOffTimer = setTimeout(() => {
           noteOffTimer = null;
@@ -124,8 +129,7 @@ function handleMidiMessage(data) {
         }, NOTE_OFF_MS);
       }
     } else {
-      // All notes released — wait for silence before cleaning up,
-      // in case the next note-on is just milliseconds away (fast runs)
+      // All notes released — schedule full all-off cleanup after silence.
       silenceTimer = setTimeout(() => {
         silenceTimer = null;
         sendAllOff();
@@ -134,6 +138,7 @@ function handleMidiMessage(data) {
     }
   }
 }
+
 
 // ─── PartyKeys connection ─────────────────────────────────────────────────────
 
@@ -164,7 +169,7 @@ async function connectMidi() {
   if (midiAccess) { findPartyKeys(); return; }
   try {
     midiAccess = await navigator.requestMIDIAccess({ sysex: true });
-    midiAccess.addEventListener('statechange', findPartyKeys);
+    midiAccess.addEventListener('statechange', () => findPartyKeys());
     findPartyKeys();
   } catch (e) {
     console.warn('[PKS] MIDI access denied:', e.message);
@@ -206,12 +211,14 @@ function reportStatus() {
   } catch (_) {}
 }
 
-// ─── Listen for MIDI messages posted by injected.js ──────────────────────────
+// ─── Listen for messages posted by injected.js ────────────────────────────────
 
 window.addEventListener('message', (event) => {
-  if (event.source !== window) return;
-  if (!event.data || !event.data.__pks) return;
-  handleMidiMessage(event.data.data);
+  if (event.source !== window || !event.data) return;
+
+  if (event.data.__pks) {
+    handleMidiMessage(event.data.data);
+  }
 });
 
 // ─── React to enable/disable toggle (via chrome.storage) ─────────────────────
